@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:host": "next dev -H 0.0.0.0",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -18,7 +19,8 @@
     "import:vnstock": "tsx scripts/importStocksFromVnstock.ts",
     "update:stocks": "tsx scripts/updateAndImportStocks.ts",
     "update:fundamentals": "tsx scripts/updateFundamentals.ts",
-    "fix:pe": "tsx scripts/fixPE.ts"
+    "fix:pe": "tsx scripts/fixPE.ts",
+    "start:local": "./start-local.sh"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
