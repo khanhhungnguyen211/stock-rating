@@ -74,22 +74,22 @@ export default function MarketIndices({ initialData }: MarketIndicesProps) {
     const bgColor = isPositive ? 'bg-emerald-50' : 'bg-rose-50'
 
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className="text-sm font-medium text-gray-500 mb-1">{label}</div>
-            <div className="text-2xl font-bold text-gray-900 tracking-tight">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 hover:shadow-md transition-shadow duration-300">
+        <div className="flex items-center justify-between mb-2 md:mb-3">
+          <div className="flex-1">
+            <div className="text-xs md:text-sm font-medium text-gray-500 mb-1">{label}</div>
+            <div className="text-lg md:text-2xl font-bold text-gray-900 tracking-tight">
               {data.current_value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}
             </div>
           </div>
           {loading && (
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-b-2 border-blue-600"></div>
           )}
         </div>
-        <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold ${bgColor} ${changeColor}`}>
+        <div className={`inline-flex items-center px-2 py-1 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-semibold ${bgColor} ${changeColor}`}>
           <span className="mr-1">{isPositive ? '↑' : '↓'}</span>
           <span>{Math.abs(data.change).toFixed(2)}</span>
-          <span className="ml-2">
+          <span className="ml-1 md:ml-2">
             ({isPositive ? '+' : ''}{data.change_percent.toFixed(2)}%)
           </span>
         </div>
@@ -98,8 +98,8 @@ export default function MarketIndices({ initialData }: MarketIndicesProps) {
   }
 
   return (
-    <div className="mb-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Thị trường hôm nay</h2>
+    <div className="mb-6 md:mb-8">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 tracking-tight">Thị trường hôm nay</h2>
       {error && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2">
@@ -110,7 +110,7 @@ export default function MarketIndices({ initialData }: MarketIndicesProps) {
           </div>
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <IndexCard label="VN-Index" data={indices.vnindex} symbol="VNINDEX" />
         <IndexCard label="VN30" data={indices.vn30} symbol="VN30" />
         <IndexCard label="HNX-Index" data={indices.hnx} symbol="HNX" />

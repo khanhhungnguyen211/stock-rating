@@ -91,7 +91,7 @@ export default async function StockDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Back Button */}
         <Link
           href="/"
@@ -106,12 +106,12 @@ export default async function StockDetailPage({ params }: PageProps) {
         {/* ============================================
             [1] HEADER CÔNG TY
             ============================================ */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8 hover:shadow-md transition-shadow duration-300">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 mb-6 md:mb-8 hover:shadow-md transition-shadow duration-300">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
             <div className="flex-1">
-              <h1 className="text-5xl font-bold text-gray-900 mb-3 tracking-tight">{stock.symbol}</h1>
-              <p className="text-xl text-gray-700 mb-4 font-medium">{companyName}</p>
-              <div className="flex items-center gap-6 text-sm text-gray-500">
+              <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-2 md:mb-3 tracking-tight">{stock.symbol}</h1>
+              <p className="text-base md:text-xl text-gray-700 mb-3 md:mb-4 font-medium">{companyName}</p>
+              <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-gray-500">
                 <span className="flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -128,10 +128,10 @@ export default async function StockDetailPage({ params }: PageProps) {
                 )}
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-3 font-medium">Giá hiện tại</div>
-              <div className="text-5xl font-bold text-gray-900 mb-3 tracking-tight">
-                {(stock.price * 1000).toLocaleString('vi-VN')} <span className="text-2xl text-gray-500 font-normal">VND</span>
+            <div className="text-left md:text-right mt-4 md:mt-0">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-2 md:mb-3 font-medium">Giá hiện tại</div>
+              <div className="text-3xl md:text-5xl font-bold text-gray-900 mb-2 md:mb-3 tracking-tight">
+                {(stock.price * 1000).toLocaleString('vi-VN')} <span className="text-xl md:text-2xl text-gray-500 font-normal">VND</span>
               </div>
               <div className="flex items-center justify-end gap-2">
                 <div
@@ -170,8 +170,8 @@ export default async function StockDetailPage({ params }: PageProps) {
         {/* ============================================
             [4] LỊCH SỬ GIÁ
             ============================================ */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8 hover:shadow-md transition-shadow duration-300">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Lịch sử giá</h2>
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 mb-6 md:mb-8 hover:shadow-md transition-shadow duration-300">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 tracking-tight">Lịch sử giá</h2>
           {vnstockPriceHistory && vnstockPriceHistory.length > 0 ? (
             <PriceHistoryTable
               priceHistory={vnstockPriceHistory.map((record) => ({
@@ -196,9 +196,9 @@ export default async function StockDetailPage({ params }: PageProps) {
             [5] THÔNG TIN DOANH NGHIỆP
             ============================================ */}
         {companyOverview && (
-          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8 hover:shadow-md transition-shadow duration-300">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">Thông tin doanh nghiệp</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 mb-6 md:mb-8 hover:shadow-md transition-shadow duration-300">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-8 tracking-tight">Thông tin doanh nghiệp</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <h3 className="text-base font-semibold text-gray-900 mb-3">Thông tin cơ bản</h3>
                 <dl className="space-y-2">
@@ -296,7 +296,7 @@ export default async function StockDetailPage({ params }: PageProps) {
         {/* ============================================
             [9] NGUỒN DỮ LIỆU
             ============================================ */}
-        <section className="bg-gray-50/50 rounded-xl border border-gray-100 p-5">
+        <section className="bg-gray-50/50 rounded-xl border border-gray-100 p-4 md:p-5">
           <div className="flex items-center justify-center gap-3 text-sm text-gray-500">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

@@ -162,8 +162,8 @@ export default function StockList({ stocks }: StockListProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Cơ hội đầu tư</h2>
+    <div className="space-y-4 md:space-y-6">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 tracking-tight">Cơ hội đầu tư</h2>
       
       {/* Search & Filters - Compact */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -247,8 +247,8 @@ export default function StockList({ stocks }: StockListProps) {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Desktop Table - Hidden on mobile */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50/50 sticky top-0 z-10 border-b-2 border-gray-200">
@@ -426,6 +426,97 @@ export default function StockList({ stocks }: StockListProps) {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card View - Hidden on desktop */}
+      <div className="md:hidden space-y-3">
+        {filteredAndSortedStocks.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+            <div className="text-4xl mb-4">🔍</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Không tìm thấy kết quả
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {searchTerm
+                ? `Không có mã nào khớp với "${searchTerm}"`
+                : `Không có mã nào ở trạng thái "${filterStatus === 'all' ? 'tất cả' : filterStatus}"`}
+            </p>
+            <button
+              onClick={() => {
+                setSearchTerm('')
+                setFilterStatus('all')
+                setQuickFilter('all')
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium underline"
+            >
+              Xóa bộ lọc →
+            </button>
+          </div>
+        ) : (
+          filteredAndSortedStocks.map((stock) => (
+            <div
+              key={stock.id}
+              onClick={() => router.push(`/stocks/${stock.symbol}`)}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 active:bg-blue-50/50 transition-colors"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg font-bold text-blue-600">{stock.symbol}</span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold border-2 ${getStatusColor(
+                        stock.valuation.status_tag
+                      )}`}
+                    >
+                      {stock.valuation.status_tag}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
+                    {stock.name}
+                  </p>
+                  {stock.sector && stock.sector !== 'N/A' && (
+                    <p className="text-xs text-gray-500">{stock.sector}</p>
+                  )}
+                </div>
+                <span
+                  className={`inline-flex items-center justify-center w-12 h-12 rounded-lg text-sm font-bold text-white shadow-sm ${getScoreColor(
+                    stock.valuation.score
+                  )}`}
+                >
+                  {Math.round(stock.valuation.score)}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Giá hiện tại</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {(stock.price * 1000).toLocaleString('vi-VN')} <span className="text-xs font-normal text-gray-500">VND</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">P/E</p>
+                  <p className="text-sm font-semibold text-gray-700">{stock.pe.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Giá trị hợp lý</p>
+                  <p className="text-sm font-semibold text-gray-700">
+                    {stock.valuation.fair_value.toLocaleString('vi-VN', {
+                      maximumFractionDigits: 0,
+                    })}{' '}
+                    <span className="text-xs font-normal text-gray-500">VND</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Chênh lệch</p>
+                  <p className={`text-sm font-bold ${getDiscountColor(stock.valuation.discount)}`}>
+                    {formatDiscount(stock.valuation.discount)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

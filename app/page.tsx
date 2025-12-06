@@ -37,7 +37,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {stocks.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="max-w-md mx-auto">

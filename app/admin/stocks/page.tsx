@@ -28,12 +28,12 @@ export default async function AdminStocksPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-900">Quản lý cổ phiếu</h2>
+    <div className="px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Quản lý cổ phiếu</h2>
         <Link
           href="/"
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm md:text-base"
         >
           Về trang chủ
         </Link>
@@ -45,7 +45,8 @@ export default async function AdminStocksPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -136,6 +137,7 @@ export default async function AdminStocksPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )
