@@ -1,3 +1,5 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Server Actions are available by default in Next.js 14+
@@ -10,6 +12,12 @@ const nextConfig = {
   },
   // Tăng timeout và cải thiện watch options cho webpack
   webpack: (config, { dev, isServer }) => {
+    // Đảm bảo path alias @/* hoạt động trong webpack
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, '.'),
+    }
+    
     if (dev && !isServer) {
       config.watchOptions = {
         poll: 1000,
