@@ -104,14 +104,15 @@ export default async function StockDetailPage({ params }: PageProps) {
         </Link>
 
         {/* ============================================
-            [1] HEADER CÔNG TY
+            [1] HEADER CÔNG TY (CẢI TIẾN)
             ============================================ */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 mb-6 md:mb-8 hover:shadow-md transition-shadow duration-300">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-6">
+            {/* Left: Company Info + Metrics */}
             <div className="flex-1">
               <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-2 md:mb-3 tracking-tight">{stock.symbol}</h1>
               <p className="text-base md:text-xl text-gray-700 mb-3 md:mb-4 font-medium">{companyName}</p>
-              <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-gray-500 mb-4">
                 <span className="flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -127,13 +128,46 @@ export default async function StockDetailPage({ params }: PageProps) {
                   </span>
                 )}
               </div>
+              
+              {/* Stock Metrics Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 pt-3 border-t border-gray-100">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">EPS</div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    {stock.eps.toLocaleString('vi-VN')} <span className="text-xs text-gray-500">VND</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">P/E</div>
+                  <div className="text-sm font-semibold text-gray-900">{stock.pe.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">ROE</div>
+                  <div className="text-sm font-semibold text-gray-900">{stock.roe.toFixed(2)}%</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Tăng trưởng</div>
+                  <div className={`text-sm font-semibold ${stock.growth_rate >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {stock.growth_rate >= 0 ? '+' : ''}{stock.growth_rate.toFixed(2)}%
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-left md:text-right mt-4 md:mt-0">
+            
+            {/* Right: Price + Valuation */}
+            <div className="text-left md:text-right mt-4 md:mt-0 md:ml-6">
               <div className="text-xs text-gray-400 uppercase tracking-wider mb-2 md:mb-3 font-medium">Giá hiện tại</div>
               <div className="text-3xl md:text-5xl font-bold text-gray-900 mb-2 md:mb-3 tracking-tight">
                 {(stock.price * 1000).toLocaleString('vi-VN')} <span className="text-xl md:text-2xl text-gray-500 font-normal">VND</span>
               </div>
-              <div className="flex items-center justify-end gap-2">
+              {marketCap && (
+                <div className="text-xs text-gray-500 mb-3">
+                  Vốn hóa: {typeof marketCap === 'number' 
+                    ? (marketCap / 1000000000).toFixed(2) + ' tỷ VND'
+                    : marketCap}
+                </div>
+              )}
+              <div className="flex items-center justify-start md:justify-end gap-2">
                 <div
                   className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                     valuation.discount > 0
@@ -193,7 +227,7 @@ export default async function StockDetailPage({ params }: PageProps) {
         </section>
 
         {/* ============================================
-            [5] THÔNG TIN DOANH NGHIỆP
+            [5] THÔNG TIN DOANH NGHIỆP (MỞ RỘNG)
             ============================================ */}
         {companyOverview && (
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 mb-6 md:mb-8 hover:shadow-md transition-shadow duration-300">
@@ -225,9 +259,54 @@ export default async function StockDetailPage({ params }: PageProps) {
                       <dt className="text-sm text-gray-600">Vốn hóa thị trường</dt>
                       <dd className="text-sm font-medium text-gray-900">
                         {typeof marketCap === 'number'
-                          ? marketCap.toLocaleString('vi-VN')
+                          ? (marketCap / 1000000000).toFixed(2) + ' tỷ VND'
                           : marketCap}
                       </dd>
+                    </div>
+                  )}
+                  {companyOverview.Địa_chỉ && (
+                    <div className="flex justify-between items-start">
+                      <dt className="text-sm text-gray-600">Địa chỉ</dt>
+                      <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">{companyOverview.Địa_chỉ}</dd>
+                    </div>
+                  )}
+                  {companyOverview.Điện_thoại && (
+                    <div className="flex justify-between">
+                      <dt className="text-sm text-gray-600">Điện thoại</dt>
+                      <dd className="text-sm font-medium text-gray-900">{companyOverview.Điện_thoại}</dd>
+                    </div>
+                  )}
+                  {companyOverview.Email && (
+                    <div className="flex justify-between">
+                      <dt className="text-sm text-gray-600">Email</dt>
+                      <dd className="text-sm font-medium text-gray-900">{companyOverview.Email}</dd>
+                    </div>
+                  )}
+                  {companyOverview.Website && (
+                    <div className="flex justify-between">
+                      <dt className="text-sm text-gray-600">Website</dt>
+                      <dd className="text-sm font-medium text-gray-900">
+                        <a 
+                          href={String(companyOverview.Website).startsWith('http') ? String(companyOverview.Website) : `https://${companyOverview.Website}`}
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-blue-600 hover:underline"
+                        >
+                          {companyOverview.Website}
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                  {companyOverview.Mã_số_thuế && (
+                    <div className="flex justify-between">
+                      <dt className="text-sm text-gray-600">Mã số thuế</dt>
+                      <dd className="text-sm font-medium text-gray-900">{companyOverview.Mã_số_thuế}</dd>
+                    </div>
+                  )}
+                  {companyOverview.Ngày_thành_lập && (
+                    <div className="flex justify-between">
+                      <dt className="text-sm text-gray-600">Ngày thành lập</dt>
+                      <dd className="text-sm font-medium text-gray-900">{companyOverview.Ngày_thành_lập}</dd>
                     </div>
                   )}
                 </dl>
