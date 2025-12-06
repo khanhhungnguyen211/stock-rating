@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { calculateValuation } from '@/lib/valuation'
 import StockForm from './StockForm'
+import ImportButton from './ImportButton'
 
 export default async function AdminStocksPage() {
   const stocks = await prisma.stock.findMany({
@@ -39,6 +40,7 @@ export default async function AdminStocksPage() {
       </div>
 
       <div className="mb-8">
+        <ImportButton />
         <StockForm />
       </div>
 
