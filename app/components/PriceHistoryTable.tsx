@@ -50,11 +50,11 @@ export default function PriceHistoryTable({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-8 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 mb-6 md:mb-8 hover:shadow-md transition-shadow duration-300">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-gray-900 tracking-tight">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
           Lịch sử giá ({priceHistory.length} phiên)
-        </h3>
+        </h2>
         <div className="text-sm text-gray-500 font-medium">
           Trang {currentPage} / {totalPages}
         </div>

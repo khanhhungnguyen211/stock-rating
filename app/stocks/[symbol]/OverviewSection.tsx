@@ -3,13 +3,69 @@
 import { useState } from 'react'
 import ValuationExplanation from './ValuationExplanation'
 
+import { HybridInsightData } from '@/app/components/HybridInsightCard'
+
+/**
+ * Generate hybrid summary text combining technical and fundamental insights
+ */
+function generateHybridSummary(hybridInsight: HybridInsightData, valuation: any, insights: any): string {
+  const { shortTerm, fundamentals, combinedSignal } = hybridInsight
+  
+  // Build summary based on combined signal and key factors
+  const parts: string[] = []
+  
+  // Signal-based opening
+  if (combinedSignal === 'Bullish') {
+    parts.push('Cổ phiếu đang có tín hiệu tích cực')
+  } else if (combinedSignal === 'Risky') {
+    parts.push('Cổ phiếu đang có mức rủi ro cao')
+  } else {
+    parts.push('Cổ phiếu đang ở trạng thái trung tính')
+  }
+  
+  // Add trend info
+  if (shortTerm.trendMode === 'UP') {
+    parts.push('với xu hướng tăng ngắn hạn')
+  } else if (shortTerm.trendMode === 'DOWN') {
+    parts.push('với xu hướng giảm ngắn hạn')
+  } else {
+    parts.push('với xu hướng đi ngang')
+  }
+  
+  // Add valuation info
+  if (valuation.discount > 0.1) {
+    parts.push(`và đang được định giá rẻ hơn ${(valuation.discount * 100).toFixed(1)}% so với giá trị hợp lý`)
+  } else if (valuation.discount < -0.1) {
+    parts.push(`nhưng đang được định giá đắt hơn ${Math.abs(valuation.discount * 100).toFixed(1)}% so với giá trị hợp lý`)
+  } else {
+    parts.push('và đang được định giá ở mức hợp lý')
+  }
+  
+  // Add fundamental health
+  if (fundamentals.financialHealthLabel === 'Tăng trưởng mạnh') {
+    parts.push('với sức khỏe tài chính tốt')
+  } else if (fundamentals.financialHealthLabel === 'Suy yếu' || fundamentals.financialHealthLabel === 'Nợ cao') {
+    parts.push('nhưng cần lưu ý về sức khỏe tài chính')
+  }
+  
+  // Add volume/volatility context
+  if (shortTerm.volumeMode === 'HIGH' && shortTerm.volatility === 'HIGH') {
+    parts.push('với biến động và khối lượng giao dịch cao, cần thận trọng')
+  } else if (shortTerm.volumeMode === 'LOW' && shortTerm.volatility === 'LOW') {
+    parts.push('với biến động và khối lượng giao dịch thấp, ổn định')
+  }
+  
+  return parts.join(', ') + '.'
+}
+
 interface OverviewSectionProps {
   valuation: any
   insights: any
   stock: any
+  hybridInsight?: HybridInsightData
 }
 
-export default function OverviewSection({ valuation, insights, stock }: OverviewSectionProps) {
+export default function OverviewSection({ valuation, insights, stock, hybridInsight }: OverviewSectionProps) {
   const [activeTab, setActiveTab] = useState<'valuation' | 'technical' | 'fundamental' | null>(null)
 
   return (
@@ -24,7 +80,10 @@ export default function OverviewSection({ valuation, insights, stock }: Overview
             <div className="flex-1">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-3">Nhận định tổng quan</h2>
               <p className="text-sm md:text-base text-gray-700 leading-relaxed max-w-3xl">
-                {valuation.summary}
+                {hybridInsight 
+                  ? generateHybridSummary(hybridInsight, valuation, insights)
+                  : valuation.summary
+                }
               </p>
             </div>
             <div className="flex flex-col items-end gap-2 flex-shrink-0">

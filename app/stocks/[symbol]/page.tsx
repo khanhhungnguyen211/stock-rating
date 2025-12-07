@@ -2,15 +2,25 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { evaluateStockInsights, mockPriceHistoryFromCurrentPrice } from '@/lib/stockInsights'
+import { evaluateAiInsight } from '@/lib/evaluateAiInsight'
+import { evaluateSafeBuyZone } from '@/lib/evaluateSafeBuyZone'
+import { evaluatePriceZones } from '@/lib/evaluatePriceZones'
+import { buildCombinedSummary } from '@/lib/buildCombinedSummary'
+import { buildHybridInsight } from '@/lib/buildHybridInsight'
+import HybridInsightCard from '@/app/components/HybridInsightCard'
+import {
+  evaluateShortTermFromVnstock,
+  evaluateShortTermFromArrays,
+} from '@/lib/analysis/shortTermAdapter'
 import {
   fetchVnstockPriceHistory,
   fetchVnstockFundamentals,
   type VnstockPriceRecord,
   type VnstockFundamentalResponse,
 } from '@/lib/vnstockClient'
+import { extractFundamentalRatios } from '@/lib/extractFundamentalRatios'
 import PriceChart from '@/app/components/PriceChart'
 import PriceHistoryTable from '@/app/components/PriceHistoryTable'
-import OverviewSection from './OverviewSection'
 
 interface PageProps {
   params: {
@@ -54,6 +64,7 @@ export default async function StockDetailPage({ params }: PageProps) {
   // Chuẩn bị dữ liệu cho insights
   let pricesHistory: number[]
   let volumesHistory: number[]
+  let priceHistoryWithHighLow: Array<{ high: number | null; low: number | null; close: number | null; volume: number | null }> = []
 
   if (vnstockPriceHistory && vnstockPriceHistory.length > 0) {
     pricesHistory = vnstockPriceHistory
@@ -62,14 +73,49 @@ export default async function StockDetailPage({ params }: PageProps) {
     volumesHistory = vnstockPriceHistory
       .map((record) => record.volume)
       .filter((vol): vol is number => vol !== null && vol !== undefined)
+    // Prepare price history with high/low for price zones analysis
+    priceHistoryWithHighLow = vnstockPriceHistory.map((record) => ({
+      high: record.high,
+      low: record.low,
+      close: record.close,
+      volume: record.volume,
+    }))
   } else {
     pricesHistory = mockPriceHistoryFromCurrentPrice(stock.price)
     volumesHistory = Array.from({ length: pricesHistory.length }, () =>
       Math.floor(Math.random() * 1000000 + 500000)
     )
+    // Create mock data with high/low
+    priceHistoryWithHighLow = pricesHistory.map((close, index) => {
+      const volatility = close * 0.02 // 2% volatility
+      return {
+        high: close + volatility * (0.5 + Math.random() * 0.5),
+        low: close - volatility * (0.5 + Math.random() * 0.5),
+        close: close,
+        volume: volumesHistory?.[index] || null,
+      }
+    })
   }
 
-  // Evaluate stock insights
+  // Evaluate Short-Term Analysis (new engine)
+  const shortTermAnalysis = vnstockPriceHistory && vnstockPriceHistory.length > 0
+    ? evaluateShortTermFromVnstock(vnstockPriceHistory)
+    : evaluateShortTermFromArrays(pricesHistory, volumesHistory)
+
+  // Extract additional fundamental ratios from vnstock
+  const extractedRatios = vnstockFundamentals
+    ? extractFundamentalRatios(vnstockFundamentals, stock.price)
+    : {}
+
+  // Calculate PEG if we have P/E and growth rate
+  let peg: number | undefined
+  if (stock.eps > 0 && stock.growth_rate > 0) {
+    const priceInVND = stock.price * 1000
+    const pe = priceInVND / stock.eps
+    peg = pe / stock.growth_rate
+  }
+
+  // Evaluate stock insights (keep for backward compatibility, but will use ShortTermAnalysis internally)
   const insights = evaluateStockInsights({
     price: stock.price,
     eps: stock.eps,
@@ -77,7 +123,59 @@ export default async function StockDetailPage({ params }: PageProps) {
     roe: stock.roe,
     pricesHistory,
     volumesHistory,
+    epsGrowth3Y: extractedRatios.epsGrowth3Y,
+    revenueGrowth3Y: extractedRatios.revenueGrowth3Y,
+    debtToEquity: extractedRatios.debtToEquity,
+    pb: extractedRatios.pb,
+    roa: extractedRatios.roa,
+    currentRatio: extractedRatios.currentRatio,
+    quickRatio: extractedRatios.quickRatio,
+    profitMargin: extractedRatios.profitMargin,
+    operatingMargin: extractedRatios.operatingMargin,
+    revenueGrowth: extractedRatios.revenueGrowth,
+    epsGrowth: extractedRatios.epsGrowth,
+    peg,
   })
+
+  // Evaluate AI Insight for beginners (will use ShortTermAnalysis if available)
+  const aiInsight = evaluateAiInsight({
+    currentPrice: stock.price,
+    trend: insights.trend,
+    risk: insights.risk,
+    volumesHistory: volumesHistory,
+    shortTermAnalysis, // Pass short-term analysis for internal use
+  })
+
+  // Evaluate Safe Buy Zone (will use ShortTermAnalysis if available)
+  const safeBuyZone = evaluateSafeBuyZone({
+    currentPrice: stock.price,
+    pricesHistory: pricesHistory,
+    volumesHistory: volumesHistory,
+    ma20: insights.trend.ma20,
+    shortTermAnalysis, // Pass short-term analysis for internal use
+  })
+
+  // Evaluate Price Zones (will use ShortTermAnalysis if available)
+  const priceZones = evaluatePriceZones({
+    currentPrice: stock.price,
+    priceHistory: priceHistoryWithHighLow,
+    volumesHistory: volumesHistory,
+    ma20: insights.trend.ma20,
+    ma50: insights.trend.ma50,
+    shortTermAnalysis, // Pass short-term analysis for internal use
+  })
+
+  // Build Combined Summary
+  const combinedSummary = buildCombinedSummary(aiInsight, safeBuyZone, priceZones, insights.trend)
+
+  // Build Hybrid Insight
+  const hybridInsight = buildHybridInsight(
+    shortTermAnalysis,
+    insights,
+    aiInsight.conclusion,
+    [aiInsight.suggestion, ...aiInsight.reasons.slice(0, 2)],
+    aiInsight.knowledge
+  )
 
   const valuation = insights.valuation
   const discountPercent = Math.abs(valuation.discount * 100).toFixed(2)
@@ -104,19 +202,53 @@ export default async function StockDetailPage({ params }: PageProps) {
         </Link>
 
         {/* ============================================
-            [1] HERO SECTION - SIMPLE
+            [1] HERO SECTION - ENHANCED WITH COMPANY INFO
             ============================================ */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            {/* Left: Symbol + Name + Sector */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            {/* Left: Symbol + Name + Company Info */}
             <div className="flex-1">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 tracking-tight">{stock.symbol}</h1>
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">{stock.symbol}</h1>
+                {companyOverview && (() => {
+                  const profileText = companyOverview.company_profile || companyOverview.history || ''
+                  const exchange = profileText.includes('HOSE') || profileText.includes('Sở Giao dịch Chứng khoán Thành phố Hồ Chí Minh') ? 'HOSE' : 
+                                  profileText.includes('HNX') || profileText.includes('Sở Giao dịch Chứng khoán Hà Nội') ? 'HNX' : 
+                                  profileText.includes('UPCOM') || profileText.includes('UPCoM') ? 'UPCOM' : null
+                  return exchange ? (
+                    <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
+                      {exchange}
+                    </span>
+                  ) : null
+                })()}
+              </div>
+              
+              {/* Tên công ty ngắn */}
               <p className="text-lg md:text-xl text-gray-700 mb-2 font-medium">{companyName}</p>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span>{companySector}</span>
+              
+              {/* Tên doanh nghiệp đầy đủ từ company_profile */}
+              {companyOverview?.company_profile && (
+                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                  {companyOverview.company_profile.split('(')[0].trim()}
+                </p>
+              )}
+              
+              {/* Thông tin bổ sung */}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span>{companySector}</span>
+                </div>
+                {companyOverview?.charter_capital && (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Vốn điều lệ: {(companyOverview.charter_capital / 1000000000).toFixed(2)} tỷ VND</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -153,34 +285,37 @@ export default async function StockDetailPage({ params }: PageProps) {
         </section>
 
         {/* ============================================
-            [3] NHẬN ĐỊNH TỔNG QUAN (NỔI BẬT)
+            [3] NHẬN ĐỊNH TỔNG QUAN (HYBRID INSIGHT)
             ============================================ */}
-        <OverviewSection valuation={valuation} insights={insights} stock={stock} />
+        <HybridInsightCard 
+          data={hybridInsight} 
+          valuation={valuation}
+          insights={insights}
+          stock={stock}
+        />
+
 
         {/* ============================================
             [4] LỊCH SỬ GIÁ
             ============================================ */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-8 mb-6 md:mb-8 hover:shadow-md transition-shadow duration-300">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 tracking-tight">Lịch sử giá</h2>
-          {vnstockPriceHistory && vnstockPriceHistory.length > 0 ? (
-            <PriceHistoryTable
-              priceHistory={vnstockPriceHistory.map((record) => ({
-                date: record.date,
-                open: record.open,
-                close: record.close,
-                high: record.high,
-                low: record.low,
-                volume: record.volume,
-              }))}
-              itemsPerPage={20}
-            />
-          ) : (
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-12 text-center">
-              <div className="text-gray-400 text-4xl mb-4">📋</div>
-              <p className="text-gray-600">Chưa có dữ liệu lịch sử giá</p>
-            </div>
-          )}
-        </section>
+        {vnstockPriceHistory && vnstockPriceHistory.length > 0 ? (
+          <PriceHistoryTable
+            priceHistory={vnstockPriceHistory.map((record) => ({
+              date: record.date,
+              open: record.open,
+              close: record.close,
+              high: record.high,
+              low: record.low,
+              volume: record.volume,
+            }))}
+            itemsPerPage={20}
+          />
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center mb-6 md:mb-8">
+            <div className="text-gray-400 text-4xl mb-4">📋</div>
+            <p className="text-gray-600">Chưa có dữ liệu lịch sử giá</p>
+          </div>
+        )}
 
         {/* ============================================
             [5] THÔNG TIN DOANH NGHIỆP (MỞ RỘNG)
@@ -196,31 +331,77 @@ export default async function StockDetailPage({ params }: PageProps) {
                     <dt className="text-sm text-gray-600">Mã cổ phiếu</dt>
                     <dd className="text-sm font-medium text-gray-900">{stock.symbol}</dd>
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-sm text-gray-600">Tên công ty</dt>
-                    <dd className="text-sm font-medium text-gray-900">{companyName}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-sm text-gray-600">Ngành</dt>
-                    <dd className="text-sm font-medium text-gray-900">{companySector}</dd>
-                  </div>
+          <div className="flex justify-between">
+            <dt className="text-sm text-gray-600">Tên công ty</dt>
+            <dd className="text-sm font-medium text-gray-900">{companyName}</dd>
+          </div>
+          {companyOverview.company_profile && (
+            <div className="flex justify-between items-start">
+              <dt className="text-sm text-gray-600">Tên doanh nghiệp đầy đủ</dt>
+              <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">
+                {companyOverview.company_profile.split('(')[0].trim() || companyName}
+              </dd>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <dt className="text-sm text-gray-600">Ngành</dt>
+            <dd className="text-sm font-medium text-gray-900">{companySector}</dd>
+          </div>
                   {listingDate && (
                     <div className="flex justify-between">
                       <dt className="text-sm text-gray-600">Ngày niêm yết</dt>
                       <dd className="text-sm font-medium text-gray-900">{listingDate}</dd>
                     </div>
                   )}
-                  {marketCap && (
-                    <div className="flex justify-between">
-                      <dt className="text-sm text-gray-600">Vốn hóa thị trường</dt>
-                      <dd className="text-sm font-medium text-gray-900">
-                        {typeof marketCap === 'number'
-                          ? (marketCap / 1000000000).toFixed(2) + ' tỷ VND'
-                          : marketCap}
-                      </dd>
-                    </div>
-                  )}
-                  {companyOverview.Địa_chỉ && (
+          {marketCap && (
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-600">Vốn hóa thị trường</dt>
+              <dd className="text-sm font-medium text-gray-900">
+                {typeof marketCap === 'number'
+                  ? (marketCap / 1000000000).toFixed(2) + ' tỷ VND'
+                  : marketCap}
+              </dd>
+            </div>
+          )}
+          {companyOverview.charter_capital && (
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-600">Vốn điều lệ</dt>
+              <dd className="text-sm font-medium text-gray-900">
+                {typeof companyOverview.charter_capital === 'number'
+                  ? (companyOverview.charter_capital / 1000000000).toFixed(2) + ' tỷ VND'
+                  : companyOverview.charter_capital}
+              </dd>
+            </div>
+          )}
+          {companyOverview.issue_share && (
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-600">Số lượng cổ phiếu</dt>
+              <dd className="text-sm font-medium text-gray-900">
+                {typeof companyOverview.issue_share === 'number'
+                  ? (companyOverview.issue_share / 1000000).toFixed(2) + ' triệu CP'
+                  : companyOverview.issue_share}
+              </dd>
+            </div>
+          )}
+          {(() => {
+            // Parse sàn giao dịch từ company_profile hoặc history
+            const profileText = companyOverview.company_profile || companyOverview.history || ''
+            let exchange = null
+            if (profileText.includes('HOSE') || profileText.includes('Sở Giao dịch Chứng khoán Thành phố Hồ Chí Minh')) {
+              exchange = 'HOSE'
+            } else if (profileText.includes('HNX') || profileText.includes('Sở Giao dịch Chứng khoán Hà Nội')) {
+              exchange = 'HNX'
+            } else if (profileText.includes('UPCOM') || profileText.includes('UPCoM')) {
+              exchange = 'UPCOM'
+            }
+            return exchange ? (
+              <div className="flex justify-between">
+                <dt className="text-sm text-gray-600">Sàn giao dịch</dt>
+                <dd className="text-sm font-medium text-gray-900">{exchange}</dd>
+              </div>
+            ) : null
+          })()}
+          {companyOverview.Địa_chỉ && (
                     <div className="flex justify-between items-start">
                       <dt className="text-sm text-gray-600">Địa chỉ</dt>
                       <dd className="text-sm font-medium text-gray-900 text-right max-w-xs">{companyOverview.Địa_chỉ}</dd>

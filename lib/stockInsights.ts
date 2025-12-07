@@ -55,6 +55,18 @@ export interface FundamentalInsight {
   epsGrowth3Y?: number // Tăng trưởng EPS 3 năm (%)
   revenueGrowth3Y?: number // Tăng trưởng doanh thu 3 năm (%)
   debtToEquity?: number // Nợ/vốn chủ
+  
+  // Thêm các chỉ số mới
+  pb?: number // Price-to-Book
+  roa?: number // Return on Assets
+  currentRatio?: number // Tỷ số thanh khoản ngắn hạn
+  quickRatio?: number // Tỷ số thanh khoản nhanh
+  profitMargin?: number // Biên lợi nhuận (%)
+  operatingMargin?: number // Biên lợi nhuận hoạt động (%)
+  revenueGrowth?: number // Tăng trưởng doanh thu (YoY %)
+  epsGrowth?: number // Tăng trưởng EPS (YoY %)
+  peg?: number // PEG Ratio
+  
   summary: string
   explanation: string[] // 1–3 bullet giải thích
 }
@@ -394,8 +406,31 @@ export function evaluateFundamental(params: {
   epsGrowth3Y?: number // tăng trưởng EPS 3 năm (%)
   revenueGrowth3Y?: number // tăng trưởng doanh thu 3 năm (%)
   debtToEquity?: number // nợ/vốn chủ
+  pb?: number // Price-to-Book
+  roa?: number // Return on Assets
+  currentRatio?: number // Tỷ số thanh khoản ngắn hạn
+  quickRatio?: number // Tỷ số thanh khoản nhanh
+  profitMargin?: number // Biên lợi nhuận (%)
+  operatingMargin?: number // Biên lợi nhuận hoạt động (%)
+  revenueGrowth?: number // Tăng trưởng doanh thu (YoY %)
+  epsGrowth?: number // Tăng trưởng EPS (YoY %)
+  peg?: number // PEG Ratio
 }): FundamentalInsight {
-  const { roe, epsGrowth3Y, revenueGrowth3Y, debtToEquity } = params
+  const { 
+    roe, 
+    epsGrowth3Y, 
+    revenueGrowth3Y, 
+    debtToEquity,
+    pb,
+    roa,
+    currentRatio,
+    quickRatio,
+    profitMargin,
+    operatingMargin,
+    revenueGrowth,
+    epsGrowth,
+    peg
+  } = params
 
   let health: FundamentalHealth
   let summary: string
@@ -496,6 +531,15 @@ export function evaluateFundamental(params: {
     epsGrowth3Y,
     revenueGrowth3Y,
     debtToEquity,
+    pb,
+    roa,
+    currentRatio,
+    quickRatio,
+    profitMargin,
+    operatingMargin,
+    revenueGrowth,
+    epsGrowth,
+    peg,
     summary,
     explanation,
   }
@@ -515,6 +559,15 @@ export function evaluateStockInsights(params: {
   epsGrowth3Y?: number
   revenueGrowth3Y?: number
   debtToEquity?: number
+  pb?: number
+  roa?: number
+  currentRatio?: number
+  quickRatio?: number
+  profitMargin?: number
+  operatingMargin?: number
+  revenueGrowth?: number
+  epsGrowth?: number
+  peg?: number
 }): StockInsights {
   const {
     price,
@@ -527,6 +580,15 @@ export function evaluateStockInsights(params: {
     epsGrowth3Y,
     revenueGrowth3Y,
     debtToEquity,
+    pb,
+    roa,
+    currentRatio,
+    quickRatio,
+    profitMargin,
+    operatingMargin,
+    revenueGrowth,
+    epsGrowth,
+    peg,
   } = params
 
   // Đánh giá định giá
@@ -555,6 +617,15 @@ export function evaluateStockInsights(params: {
     epsGrowth3Y,
     revenueGrowth3Y,
     debtToEquity,
+    pb,
+    roa,
+    currentRatio,
+    quickRatio,
+    profitMargin,
+    operatingMargin,
+    revenueGrowth,
+    epsGrowth,
+    peg,
   })
 
   return {
